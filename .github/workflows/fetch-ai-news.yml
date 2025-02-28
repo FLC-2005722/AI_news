@@ -51,11 +51,16 @@ jobs:
             cp ai_news_${{ env.TODAY }}.json ai_news_cn_${{ env.TODAY }}.json
           fi
 
-      - name: Generate English PDF
+      - name: Install Chinese fonts for PDF generation
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y fonts-noto-cjk
+
+      - name: Generate English PDF and Markdown
         run: |
           python generate_pdf.py ai_news_${{ env.TODAY }}.json en
 
-      - name: Generate Chinese PDF
+      - name: Generate Chinese PDF and Markdown
         run: |
           python generate_pdf.py ai_news_cn_${{ env.TODAY }}.json zh
 
@@ -72,11 +77,15 @@ jobs:
           files: |
             ai_news_${{ env.TODAY }}.pdf
             ai_news_cn_${{ env.TODAY }}.pdf
+            ai_news_${{ env.TODAY }}.md
+            ai_news_cn_${{ env.TODAY }}.md
           body: |
             # AI News Daily Digest ${{ env.TODAY }}
             
             ## 📄 Available Reports
-            - [English Version](ai_news_${{ env.TODAY }}.pdf) - AI News Daily Digest
-            - [中文版本](ai_news_cn_${{ env.TODAY }}.pdf) - AI新闻每日简报
+            - [English PDF](ai_news_${{ env.TODAY }}.pdf) - AI News Daily Digest (PDF format)
+            - [English Markdown](ai_news_${{ env.TODAY }}.md) - AI News Daily Digest (Markdown format)
+            - [中文PDF](ai_news_cn_${{ env.TODAY }}.pdf) - AI新闻每日简报 (PDF格式)
+            - [中文Markdown](ai_news_cn_${{ env.TODAY }}.md) - AI新闻每日简报 (Markdown格式)
             
             *These reports are automatically generated using NewsAPI and machine translation.*
