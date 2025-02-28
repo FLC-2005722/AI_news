@@ -27,7 +27,9 @@ jobs:
 
       - name: Set current date
         id: date
-        run: echo "TODAY=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+        run: |
+          echo "TODAY=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+          echo "TAG_DATE=$(date +'%Y%m%d')" >> $GITHUB_ENV
 
       - name: Fetch AI News
         env:
@@ -46,7 +48,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v${{ env.TODAY | replace('-', '') }}
+          tag_name: v${{ env.TAG_DATE }}
           name: "AI News ${{ env.TODAY }}"
           draft: false
           prerelease: false
