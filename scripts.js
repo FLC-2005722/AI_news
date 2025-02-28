@@ -26,8 +26,8 @@ document.addEventListener('DOMContentLoaded', function() {
         changeLanguage('zh');
     });
     
-    // 加载GitHub Releases数据
-    fetchReleasesData();
+    // 加载GitHub Releases数据和新闻数据
+    loadNewsData();
 });
 
 // 更新日期显示
@@ -94,34 +94,26 @@ function updateUIText() {
     document.title = textElements['main-title'][currentLanguage];
 }
 
-// 获取最新的GitHub Releases数据
-async function fetchReleasesData() {
+// 直接从data目录加载新闻数据
+async function loadNewsData() {
     try {
-        const response = await fetch('https://api.github.com/repos/your-username/AI_news/releases');
-        if (!response.ok) {
-            throw new Error('Failed to fetch releases');
-        }
+        // 先尝试从data目录加载最新数据
+        await Promise.all([
+            fetchNewsData('en'),
+            fetchNewsData('zh')
+        ]);
         
-        releasesData = await response.json();
-        
-        // 如果有发布数据，获取最新的一个
-        if (releasesData && releasesData.length > 0) {
-            const latestRelease = releasesData[0];
-            
-            // 从发布名称中提取日期
-            const dateMatch = latestRelease.name.match(/AI News (\d{4}-\d{2}-\d{2})/);
-            if (dateMatch && dateMatch[1]) {
-                today = dateMatch[1];
+        // 如果成功获取到数据，显示下载链接
+        if (newsData.en || newsData.zh) {
+            try {
+                const response = await fetch('https://api.github.com/repos/' + getRepoPath() + '/releases/latest');
+                if (response.ok) {
+                    const release = await response.json();
+                    updateDownloadLinks(release);
+                }
+            } catch (error) {
+                console.warn('Failed to fetch release data for download links:', error);
             }
-            
-            // 获取英文和中文新闻数据
-            await Promise.all([
-                fetchNewsData('en'),
-                fetchNewsData('zh')
-            ]);
-            
-            // 更新下载链接
-            updateDownloadLinks(latestRelease);
             
             // 渲染新闻内容
             renderNews();
@@ -129,7 +121,7 @@ async function fetchReleasesData() {
             showNoNewsMessage();
         }
     } catch (error) {
-        console.error('Error fetching releases:', error);
+        console.error('Error loading news data:', error);
         showNoNewsMessage();
     }
 }
@@ -137,7 +129,7 @@ async function fetchReleasesData() {
 // 获取新闻数据
 async function fetchNewsData(lang) {
     const suffix = lang === 'en' ? '' : '_cn';
-    const jsonUrl = `https://github.com/your-username/AI_news/releases/download/v${today.replace(/-/g, '')}/ai_news${suffix}_${today}.json`;
+    const jsonUrl = `data/latest${suffix}.json`;
     
     try {
         const response = await fetch(jsonUrl);
@@ -146,13 +138,31 @@ async function fetchNewsData(lang) {
         }
         
         newsData[lang] = await response.json();
+        
+        // 从数据中提取日期
+        if (newsData[lang] && newsData[lang].length > 0) {
+            const firstArticle = newsData[lang][0];
+            if (firstArticle.publishedAt) {
+                const pubDate = new Date(firstArticle.publishedAt);
+                today = pubDate.toISOString().split('T')[0];
+            }
+        }
     } catch (error) {
         console.error(`Error fetching ${lang} news:`, error);
         newsData[lang] = null;
+    } finally {
+        // 隐藏加载指示器
+        document.getElementById('news-loading').style.display = 'none';
     }
-    
-    // 隐藏加载指示器
-    document.getElementById('news-loading').style.display = 'none';
+}
+
+// 获取仓库路径
+function getRepoPath() {
+    const pathArray = window.location.pathname.split('/');
+    const repoName = pathArray[1] || 'AI_news';
+    const userName = window.location.hostname === 'localhost' ? 'your-username' : 
+                    (pathArray[0] || window.location.hostname.split('.')[0]);
+    return `${userName}/${repoName}`;
 }
 
 // 更新下载链接

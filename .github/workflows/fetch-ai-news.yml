@@ -108,17 +108,29 @@ jobs:
 
       - name: Create web directory
         run: |
-          # 创建web目录用于存放网站文件
+          # 创建构建目录
           mkdir -p _site
-          # 复制所有网站相关文件到web目录
-          cp -r index.html archive.html styles.css scripts.js archive.js _site/
-          # 创建data目录
+          
+          # 复制静态文件
+          cp -r web/* _site/ 2>/dev/null || :
+          cp *.html _site/
+          cp *.css _site/
+          cp *.js _site/
+          
+          # 创建数据目录
           mkdir -p _site/data
-          # 复制最新的新闻数据
+          
+          # 复制并重命名最新的新闻数据
           cp ai_news_${{ env.TODAY }}.json _site/data/latest.json
           cp ai_news_cn_${{ env.TODAY }}.json _site/data/latest_cn.json
+          
+          # 创建历史数据目录
+          mkdir -p _site/data/archive
+          cp ai_news_${{ env.TODAY }}.json _site/data/archive/
+          cp ai_news_cn_${{ env.TODAY }}.json _site/data/archive/
+          
           # 替换网站文件中的GitHub用户名
-          find _site -type f -name "*.html" -o -name "*.js" | xargs sed -i "s/your-username/${{ github.repository_owner }}/g"
+          find _site -type f \( -name "*.html" -o -name "*.js" \) -exec sed -i "s/your-username/${{ github.repository_owner }}/g" {} +
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
