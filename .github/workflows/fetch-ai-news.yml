@@ -79,13 +79,21 @@ jobs:
             ai_news_cn_${{ env.TODAY }}.pdf
             ai_news_${{ env.TODAY }}.md
             ai_news_cn_${{ env.TODAY }}.md
+            ai_news_${{ env.TODAY }}.json
+            ai_news_cn_${{ env.TODAY }}.json
           body: |
             # AI News Daily Digest ${{ env.TODAY }}
             
             ## 📄 Available Reports
-            - [English PDF](ai_news_${{ env.TODAY }}.pdf) - AI News Daily Digest (PDF format)
-            - [English Markdown](ai_news_${{ env.TODAY }}.md) - AI News Daily Digest (Markdown format)
-            - [中文PDF](ai_news_cn_${{ env.TODAY }}.pdf) - AI新闻每日简报 (PDF格式)
-            - [中文Markdown](ai_news_cn_${{ env.TODAY }}.md) - AI新闻每日简报 (Markdown格式)
+            
+            ### English
+            - [PDF](ai_news_${{ env.TODAY }}.pdf) - AI News Daily Digest (PDF format)
+            - [Markdown](ai_news_${{ env.TODAY }}.md) - AI News Daily Digest (Markdown format)
+            - [JSON](ai_news_${{ env.TODAY }}.json) - Raw data in JSON format
+            
+            ### Chinese / 中文
+            - [PDF](ai_news_cn_${{ env.TODAY }}.pdf) - AI新闻每日简报 (PDF格式)
+            - [Markdown](ai_news_cn_${{ env.TODAY }}.md) - AI新闻每日简报 (Markdown格式)
+            - [JSON](ai_news_cn_${{ env.TODAY }}.json) - 原始JSON数据
             
             *These reports are automatically generated using NewsAPI and machine translation.*
