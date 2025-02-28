@@ -40,9 +40,16 @@ jobs:
 
       - name: Translate News to Chinese
         env:
-          TRANSLATE_API_KEY: ${{ secrets.TRANSLATE_API_KEY }}
+          # 智谱AI翻译API
+          ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
+          ZHIPU_MODEL: ${{ secrets.ZHIPU_MODEL || 'glm-4-flash' }}
         run: |
           python translate.py ai_news_${{ env.TODAY }}.json
+          # 如果翻译失败但仍需要生成PDF，可以创建一个副本用于中文PDF生成
+          if [ ! -f "ai_news_cn_${{ env.TODAY }}.json" ]; then
+            echo "警告: 翻译失败，创建一个副本用于中文PDF生成"
+            cp ai_news_${{ env.TODAY }}.json ai_news_cn_${{ env.TODAY }}.json
+          fi
 
       - name: Generate English PDF
         run: |
