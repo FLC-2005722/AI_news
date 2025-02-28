@@ -2,33 +2,141 @@
 <html>
 
 <head>
-    <title>AI News</title>
+    <title>AI News Daily Digest</title>
+    <meta charset="utf-8">
     <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+            @top-center {
+                content: "AI News Daily Digest";
+                font-family: Arial, sans-serif;
+                font-size: 10pt;
+            }
+            @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 9pt;
+            }
+            @bottom-left {
+                content: "{{ date }}";
+                font-size: 9pt;
+            }
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #0078d7;
+        }
+
+        .header h1 {
+            color: #0078d7;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: #666;
+            margin-top: 0;
         }
 
         .article {
             border-bottom: 1px solid #ddd;
-            padding: 20px;
+            padding: 15px 0;
+            page-break-inside: avoid;
+        }
+
+        .article:last-child {
+            border-bottom: none;
         }
 
         .title {
-            color: #1a0dab;
+            color: #0078d7;
             font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .source {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .description {
+            margin: 10px 0;
+            text-align: justify;
+        }
+
+        .read-more {
+            text-align: right;
+            font-size: 12px;
+        }
+
+        .read-more a {
+            color: #0078d7;
+            text-decoration: none;
+        }
+
+        .read-more a:hover {
+            text-decoration: underline;
+        }
+
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .date {
+            font-style: italic;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .summary {
+            background-color: #f5f5f5;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
         }
     </style>
 </head>
 
 <body>
+    <div class="header">
+        <h1>AI News Daily Digest</h1>
+        <p>{{ date }} • {{ article_count }} articles</p>
+    </div>
+
+    <div class="summary">
+        <p>This digest contains the latest news and updates about artificial intelligence from various sources around the web. Generated automatically on {{ generation_time }}.</p>
+    </div>
+
     {% for article in articles %}
     <div class="article">
         <div class="title">{{ article.title }}</div>
-        <div><small>{{ article.publishedAt }}</small></div>
-        <div>{{ article.description }}</div>
-        <div><a href="{{ article.url }}">Read more</a></div>
+        <div class="source">
+            <span class="date">{{ article.publishedAt }}</span>
+            {% if article.source and article.source.name %} • {{ article.source.name }}{% endif %}
+        </div>
+        <div class="description">{{ article.description }}</div>
+        <div class="read-more"><a href="{{ article.url }}" target="_blank">Read more</a></div>
     </div>
     {% endfor %}
+
+    <div class="footer">
+        <p>This report is automatically generated using the NewsAPI service.</p>
+    </div>
 </body>
 
 </html>
