@@ -104,7 +104,8 @@ async function loadNewsData() {
         ]);
         
         // 如果成功获取到数据，显示下载链接
-        if (newsData.en || newsData.zh) {
+        if ((newsData.en && newsData.en.articles && newsData.en.articles.length > 0) || 
+            (newsData.zh && newsData.zh.articles && newsData.zh.articles.length > 0)) {
             try {
                 const response = await fetch('https://api.github.com/repos/' + getRepoPath() + '/releases/latest');
                 if (response.ok) {
@@ -138,10 +139,11 @@ async function fetchNewsData(lang) {
         }
         
         newsData[lang] = await response.json();
+        console.log(`Loaded ${lang} news data:`, newsData[lang]);
         
-        // 从数据中提取日期
-        if (newsData[lang] && newsData[lang].length > 0) {
-            const firstArticle = newsData[lang][0];
+        // 从数据中提取日期 - 考虑新的数据结构
+        if (newsData[lang] && newsData[lang].articles && newsData[lang].articles.length > 0) {
+            const firstArticle = newsData[lang].articles[0];
             if (firstArticle.publishedAt) {
                 const pubDate = new Date(firstArticle.publishedAt);
                 today = pubDate.toISOString().split('T')[0];
@@ -201,7 +203,7 @@ function renderNews() {
     
     const data = newsData[currentLanguage];
     
-    if (!data || data.length === 0) {
+    if (!data || !data.articles || data.articles.length === 0) {
         showNoNewsMessage();
         return;
     }
@@ -210,7 +212,7 @@ function renderNews() {
     document.getElementById('no-news').classList.add('d-none');
     
     // 渲染每条新闻
-    data.forEach((article, index) => {
+    data.articles.forEach((article, index) => {
         const newsCard = document.createElement('div');
         newsCard.className = 'news-card';
         

@@ -317,9 +317,6 @@ def fetch_ai_news():
     # 定义文件名
     filename = f"ai_news_{output_date}.json"
     
-    # 默认空结果
-    articles = []
-    
     try:
         print("正在从NewsAPI获取AI新闻...")
         print(f"查询范围: {from_date} 到 {to_date}")
@@ -456,15 +453,22 @@ def process_and_save_articles(articles, keywords_manager):
     processed_articles = []
     
     for article in articles:
-        if not all(key in article for key in ["title", "description", "url", "publishedAt"]):
+        # 先确保所有必要字段都存在且不为None
+        if not all(key in article and article[key] is not None for key in ["title", "description", "url", "publishedAt"]):
             continue
             
         if not article["description"] or article["description"].strip() == "":
             continue
         
+        # 确保source字段及其子字段存在
+        if "source" not in article or not isinstance(article["source"], dict):
+            article["source"] = {"name": "Unknown Source"}
+        elif "name" not in article["source"] or article["source"]["name"] is None:
+            article["source"]["name"] = "Unknown Source"
+        
         # 生成文章内容的指纹
-        title = article["title"].lower().strip()
-        desc = article["description"].lower().strip()
+        title = article["title"].lower().strip() if article["title"] else ""
+        desc = article["description"].lower().strip() if article["description"] else ""
         content_hash = f"{title[:50]}_{desc[:100]}"
         
         # 检查是否有相似内容
@@ -472,7 +476,13 @@ def process_and_save_articles(articles, keywords_manager):
             continue
         
         # 检查标题相似度
-        if any(similar_title(title, a["title"].lower().strip()) for a in processed_articles):
+        similar_found = False
+        for processed_article in processed_articles:
+            if processed_article.get("title") and similar_title(title, processed_article["title"].lower().strip()):
+                similar_found = True
+                break
+        
+        if similar_found:
             continue
         
         seen_contents.add(content_hash)
@@ -480,8 +490,8 @@ def process_and_save_articles(articles, keywords_manager):
         try:
             pub_date = datetime.fromisoformat(article["publishedAt"].replace("Z", "+00:00"))
             article["publishedAt"] = pub_date.strftime("%Y-%m-%d %H:%M:%S")
-        except (ValueError, TypeError):
-            pass
+        except (ValueError, TypeError, AttributeError):
+            article["publishedAt"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
         # 使用更新后的关键词计算文章评分
         article["score"] = calculate_article_score_with_dynamic_keywords(article, keywords_manager)
@@ -489,7 +499,7 @@ def process_and_save_articles(articles, keywords_manager):
     
     # 按评分排序并选取前20篇
     processed_articles.sort(key=lambda x: x.get("score", 0), reverse=True)
-    top_articles = processed_articles[:20]
+    top_articles = processed_articles[:20] if processed_articles else []
     
     # 保存文章时也保存当前的热门关键词
     output_data = {
@@ -560,8 +570,9 @@ def calculate_article_score_with_dynamic_keywords(article, keywords_manager):
     """使用动态关键词计算文章评分"""
     score = 0
     
-    title = article.get("title", "").lower()
-    description = article.get("description", "").lower()
+    # 安全获取文本字段，确保不会是None
+    title = (article.get("title") or "").lower()
+    description = (article.get("description") or "").lower()
     
     # 获取当前热门关键词及其权重
     current_keywords = keywords_manager.get_current_hot_keywords()
@@ -581,7 +592,7 @@ def calculate_article_score_with_dynamic_keywords(article, keywords_manager):
             weight = keywords_manager.get_keyword_weight(keyword)
             score += 3 * weight
     
-    # ... 其余评分逻辑保持不变 ...
+    # 来源可靠度评分
     highly_trusted_sources = ["nature", "science", "mit", "ieee", "arxiv"]
     trusted_sources = [
         "techcrunch", "wired", "bbc", "nytimes", "guardian", "reuters", 
@@ -590,7 +601,7 @@ def calculate_article_score_with_dynamic_keywords(article, keywords_manager):
         "artificial intelligence news", "mit technology review", "ai news"
     ]
     
-    source_name = article.get("source", {}).get("name", "").lower()
+    source_name = (article.get("source", {}).get("name") or "").lower()
     for source in highly_trusted_sources:
         if source in source_name:
             score += 15
@@ -600,7 +611,8 @@ def calculate_article_score_with_dynamic_keywords(article, keywords_manager):
             score += 10
             break
     
-    url = article.get("url", "").lower()
+    # URL评分
+    url = (article.get("url") or "").lower()
     if any(keyword in url for keyword in current_keywords):
         score += 2
     if "news" in url or "article" in url or "blog" in url:
@@ -609,9 +621,11 @@ def calculate_article_score_with_dynamic_keywords(article, keywords_manager):
     if article.get("urlToImage"):
         score += 3
     
+    # 处理描述文本
     description = re.sub(r'<[^>]+>', '', description)
     description = re.sub(r'\s+', ' ', description).strip()
     
+    # 文章长度评分
     desc_length = len(description)
     if 200 <= desc_length <= 1000:
         score += 8
@@ -620,6 +634,7 @@ def calculate_article_score_with_dynamic_keywords(article, keywords_manager):
     elif 50 <= desc_length < 100:
         score += 2
     
+    # 文章新鲜度评分
     try:
         pub_date = datetime.fromisoformat(article["publishedAt"].replace("Z", "+00:00"))
         hours_ago = (datetime.now().astimezone() - pub_date.astimezone()).total_seconds() / 3600
@@ -629,25 +644,37 @@ def calculate_article_score_with_dynamic_keywords(article, keywords_manager):
             score += 8
         elif hours_ago <= 24:
             score += 5
-    except (ValueError, TypeError, KeyError):
+    except (ValueError, TypeError, KeyError, AttributeError):
         pass
     
     return score
 
 def similar_title(title1, title2):
     """检查两个标题是否相似"""
+    # 如果输入为None或空，认为不相似
+    if not title1 or not title2:
+        return False
+    
     # 如果其中一个标题完全包含在另一个标题中
     if title1 in title2 or title2 in title1:
         return True
     
-    # 计算编辑距离相似度
-    words1 = set(title1.split())
-    words2 = set(title2.split())
-    common_words = words1.intersection(words2)
-    
-    # 如果有80%或以上的词重合，认为是相似标题
-    similarity = len(common_words) / max(len(words1), len(words2))
-    return similarity > 0.8
+    # 计算词汇重叠度相似度
+    try:
+        words1 = set(title1.split())
+        words2 = set(title2.split())
+        
+        # 防止除零错误
+        if not words1 or not words2:
+            return False
+            
+        common_words = words1.intersection(words2)
+        
+        # 如果有80%或以上的词重合，认为是相似标题
+        similarity = len(common_words) / max(len(words1), len(words2))
+        return similarity > 0.8
+    except (AttributeError, TypeError):
+        return False
 
 if __name__ == "__main__":
     fetch_ai_news()

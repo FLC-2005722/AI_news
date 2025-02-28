@@ -122,14 +122,27 @@ jobs:
           # 创建数据目录
           mkdir -p _site/data
           
-          # 复制并重命名最新的新闻数据
-          cp ai_news_${{ env.TODAY }}.json _site/data/latest.json
-          cp ai_news_cn_${{ env.TODAY }}.json _site/data/latest_cn.json
+          # 检查JSON文件是否存在并包含articles字段
+          if [ -f "ai_news_${{ env.TODAY }}.json" ]; then
+            echo "Copying English news data to _site/data/latest.json"
+            cp ai_news_${{ env.TODAY }}.json _site/data/latest.json
+          else
+            echo "Warning: English news file not found, creating a sample file"
+            echo '{"articles":[{"title":"Sample News","description":"This is a sample news item. The actual news could not be generated.","source":{"name":"Sample Source"},"publishedAt":"'$(date -Iseconds)'","url":"#"}]}' > _site/data/latest.json
+          fi
+          
+          if [ -f "ai_news_cn_${{ env.TODAY }}.json" ]; then
+            echo "Copying Chinese news data to _site/data/latest_cn.json"
+            cp ai_news_cn_${{ env.TODAY }}.json _site/data/latest_cn.json
+          else
+            echo "Warning: Chinese news file not found, creating a sample file"
+            echo '{"articles":[{"title":"示例新闻","description":"这是一条示例新闻。实际新闻未能生成。","source":{"name":"示例来源"},"publishedAt":"'$(date -Iseconds)'","url":"#"}]}' > _site/data/latest_cn.json
+          fi
           
           # 创建历史数据目录
           mkdir -p _site/data/archive
-          cp ai_news_${{ env.TODAY }}.json _site/data/archive/
-          cp ai_news_cn_${{ env.TODAY }}.json _site/data/archive/
+          cp ai_news_${{ env.TODAY }}.json _site/data/archive/ 2>/dev/null || :
+          cp ai_news_cn_${{ env.TODAY }}.json _site/data/archive/ 2>/dev/null || :
           
           # 替换网站文件中的GitHub用户名
           find _site -type f \( -name "*.html" -o -name "*.js" \) -exec sed -i "s/your-username/${{ github.repository_owner }}/g" {} +
