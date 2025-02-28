@@ -13,8 +13,11 @@ API_KEY = os.environ.get("NEWS_API_KEY", "YOUR_NEWSAPI_KEY")  # 从环境变量�
 QUERY = "(artificial intelligence OR machine learning OR deep learning OR AI OR LLM OR GPT)"  # 搜索关键词范围
 LANGUAGE = "en"  # 新闻语言
 SORT_BY = "publishedAt"  # 按发布时间排序
-PAGE_SIZE = 200  # 增加到200篇文章以获取更多候选
+PAGE_SIZE = 100  # 减少到默认100篇文章，以避免超出免费计划限制
 
+# 备用新闻源API
+GNEWS_API_URL = "https://gnews.io/api/v4/search"
+GNEWS_API_KEY = os.environ.get("GNEWS_API_KEY")
 
 # 热门AI关键词，用于评分和排序
 HOT_KEYWORDS = [
@@ -311,6 +314,44 @@ def fetch_ai_news():
     from_date = actual_yesterday.strftime("%Y-%m-%d")
     to_date = actual_today.strftime("%Y-%m-%d")
     
+    # 定义文件名
+    filename = f"ai_news_{output_date}.json"
+    
+    # 默认空结果
+    articles = []
+    
+    try:
+        print("正在从NewsAPI获取AI新闻...")
+        print(f"查询范围: {from_date} 到 {to_date}")
+        print(f"将保存到文件: {filename}")
+        
+        # 更新GitHub趋势关键词
+        print("更新GitHub AI趋势关键词...")
+        keywords_manager.update_from_github_trending()
+        
+        # 先尝试使用NewsAPI
+        newsapi_success = fetch_from_newsapi(from_date, to_date, keywords_manager)
+        
+        # 如果NewsAPI失败，尝试使用备用API
+        if not newsapi_success and GNEWS_API_KEY:
+            print("NewsAPI请求失败，尝试使用GNews API作为备选...")
+            gnews_success = fetch_from_gnews(keywords_manager)
+            if not gnews_success:
+                print("所有API请求均失败，将创建示例数据")
+                create_sample_data(filename, keywords_manager)
+        elif not newsapi_success:
+            print("NewsAPI请求失败，且未配置备用API")
+            create_sample_data(filename, keywords_manager)
+            
+        return filename
+    
+    except Exception as e:
+        print(f"获取新闻时发生意外错误: {e}")
+        create_sample_data(filename, keywords_manager)
+        return filename
+
+def fetch_from_newsapi(from_date, to_date, keywords_manager):
+    """从NewsAPI获取新闻"""
     params = {
         "q": QUERY,
         "language": LANGUAGE,
@@ -322,16 +363,14 @@ def fetch_ai_news():
     }
     
     try:
-        print("正在从NewsAPI获取AI新闻...")
-        print(f"查询范围: {from_date} 到 {to_date}")
-        print(f"将保存到文件: ai_news_{output_date}.json")
-        
-        # 更新GitHub趋势关键词
-        print("更新GitHub AI趋势关键词...")
-        keywords_manager.update_from_github_trending()
-        
         response = requests.get(NEWS_API_URL, params=params)
-        response.raise_for_status()  # 如果请求失败则引发异常
+        
+        # 检查特定的错误代码
+        if response.status_code == 426:
+            print("NewsAPI返回426错误：需要升级账户。这通常意味着当前API密钥是免费版本，存在使用限制。")
+            return False
+            
+        response.raise_for_status()  # 处理其他HTTP错误
         
         news_data = response.json()
         articles = news_data.get("articles", [])
@@ -339,6 +378,10 @@ def fetch_ai_news():
         
         print(f"API返回总结果: {total_results}")
         
+        if not articles:
+            print("NewsAPI未返回任何文章")
+            return False
+            
         # 更新来自新闻的热门关键词
         print("从新闻更新热门关键词...")
         keywords_manager.update_from_news_titles(articles)
@@ -346,74 +389,172 @@ def fetch_ai_news():
         # 保存更新后的关键词数据
         keywords_manager.save_cached_keywords()
         
-        # 文章去重和处理
-        seen_contents = set()  # 用于追踪内容相似度
-        processed_articles = []
+        # 处理并保存文章
+        process_and_save_articles(articles, keywords_manager)
         
-        for article in articles:
-            if not all(key in article for key in ["title", "description", "url", "publishedAt"]):
-                continue
-                
-            if not article["description"] or article["description"].strip() == "":
-                continue
-            
-            # 生成文章内容的指纹
-            title = article["title"].lower().strip()
-            desc = article["description"].lower().strip()
-            content_hash = f"{title[:50]}_{desc[:100]}"  # 使用标题和描述的组合作为指纹
-            
-            # 检查是否有相似内容
-            if content_hash in seen_contents:
-                continue
-            
-            # 检查标题相似度
-            if any(similar_title(title, a["title"].lower().strip()) for a in processed_articles):
-                continue
-            
-            seen_contents.add(content_hash)
-            
-            try:
-                pub_date = datetime.fromisoformat(article["publishedAt"].replace("Z", "+00:00"))
-                article["publishedAt"] = pub_date.strftime("%Y-%m-%d %H:%M:%S")
-            except (ValueError, TypeError):
-                pass
-            
-            # 使用更新后的关键词计算文章评分
-            article["score"] = calculate_article_score_with_dynamic_keywords(article, keywords_manager)
-            processed_articles.append(article)
+        return True
         
-        # 按评分排序并选取前20篇
-        processed_articles.sort(key=lambda x: x.get("score", 0), reverse=True)
-        top_articles = processed_articles[:20]
-        
-        # 保存新闻到文件
-        filename = f"ai_news_{output_date}.json"
-        
-        # 保存文章时也保存当前的热门关键词
-        output_data = {
-            "articles": top_articles,
-            "hot_keywords": {
-                "timestamp": datetime.now().isoformat(),
-                "keywords": keywords_manager.get_current_hot_keywords(),
-                "dynamic_weights": keywords_manager.dynamic_keywords
-            }
-        }
-        
-        with open(filename, "w", encoding="utf-8") as file:
-            json.dump(output_data, file, indent=4, ensure_ascii=False)
-        
-        print(f"成功筛选和排序 {len(top_articles)} 篇高质量AI新闻文章 (共获取: {len(processed_articles)})，并保存到 {filename}")
-        print(f"当前热门关键词数量: {len(keywords_manager.get_current_hot_keywords())}")
-        return filename
-    
     except requests.exceptions.RequestException as e:
-        print(f"获取新闻时发生错误: {e}")
-        # 如果API请求失败，创建一个空的JSON文件以避免后续处理失败
-        filename = f"ai_news_{output_date}.json"
-        with open(filename, "w", encoding="utf-8") as file:
-            json.dump({"articles": [], "hot_keywords": {"keywords": []}}, file)
-        print(f"创建了空的新闻文件: {filename}")
-        return filename
+        print(f"NewsAPI请求失败: {e}")
+        return False
+
+def fetch_from_gnews(keywords_manager):
+    """从GNews API获取新闻作为备用"""
+    if not GNEWS_API_KEY:
+        return False
+        
+    params = {
+        "q": "artificial intelligence",
+        "lang": "en",
+        "country": "us",
+        "max": 50,
+        "apikey": GNEWS_API_KEY
+    }
+    
+    try:
+        response = requests.get(GNEWS_API_URL, params=params)
+        response.raise_for_status()
+        
+        news_data = response.json()
+        gnews_articles = news_data.get("articles", [])
+        
+        print(f"GNews API返回结果: {len(gnews_articles)}篇文章")
+        
+        if not gnews_articles:
+            return False
+            
+        # 转换为NewsAPI格式
+        articles = []
+        for item in gnews_articles:
+            article = {
+                "title": item.get("title", ""),
+                "description": item.get("description", ""),
+                "url": item.get("url", ""),
+                "urlToImage": item.get("image", ""),
+                "publishedAt": item.get("publishedAt", ""),
+                "source": {"name": item.get("source", {}).get("name", "")}
+            }
+            articles.append(article)
+            
+        # 处理并保存文章
+        process_and_save_articles(articles, keywords_manager)
+        
+        return True
+        
+    except requests.exceptions.RequestException as e:
+        print(f"GNews API请求失败: {e}")
+        return False
+
+def process_and_save_articles(articles, keywords_manager):
+    """处理文章并保存到文件"""
+    # 获取文件名
+    output_date = os.environ.get('TODAY', datetime.now().strftime('%Y-%m-%d'))
+    filename = f"ai_news_{output_date}.json"
+    
+    # 文章去重和处理
+    seen_contents = set()
+    processed_articles = []
+    
+    for article in articles:
+        if not all(key in article for key in ["title", "description", "url", "publishedAt"]):
+            continue
+            
+        if not article["description"] or article["description"].strip() == "":
+            continue
+        
+        # 生成文章内容的指纹
+        title = article["title"].lower().strip()
+        desc = article["description"].lower().strip()
+        content_hash = f"{title[:50]}_{desc[:100]}"
+        
+        # 检查是否有相似内容
+        if content_hash in seen_contents:
+            continue
+        
+        # 检查标题相似度
+        if any(similar_title(title, a["title"].lower().strip()) for a in processed_articles):
+            continue
+        
+        seen_contents.add(content_hash)
+        
+        try:
+            pub_date = datetime.fromisoformat(article["publishedAt"].replace("Z", "+00:00"))
+            article["publishedAt"] = pub_date.strftime("%Y-%m-%d %H:%M:%S")
+        except (ValueError, TypeError):
+            pass
+        
+        # 使用更新后的关键词计算文章评分
+        article["score"] = calculate_article_score_with_dynamic_keywords(article, keywords_manager)
+        processed_articles.append(article)
+    
+    # 按评分排序并选取前20篇
+    processed_articles.sort(key=lambda x: x.get("score", 0), reverse=True)
+    top_articles = processed_articles[:20]
+    
+    # 保存文章时也保存当前的热门关键词
+    output_data = {
+        "articles": top_articles,
+        "hot_keywords": {
+            "timestamp": datetime.now().isoformat(),
+            "keywords": keywords_manager.get_current_hot_keywords(),
+            "dynamic_weights": keywords_manager.dynamic_keywords
+        }
+    }
+    
+    with open(filename, "w", encoding="utf-8") as file:
+        json.dump(output_data, file, indent=4, ensure_ascii=False)
+    
+    print(f"成功筛选和排序 {len(top_articles)} 篇高质量AI新闻文章 (共获取: {len(processed_articles)})，并保存到 {filename}")
+    print(f"当前热门关键词数量: {len(keywords_manager.get_current_hot_keywords())}")
+
+def create_sample_data(filename, keywords_manager):
+    """创建示例新闻数据，当所有API都失败时使用"""
+    print("创建示例新闻数据...")
+    
+    sample_articles = [
+        {
+            "source": {"name": "AI News Example"},
+            "title": "Latest Developments in Artificial Intelligence",
+            "description": "This is an example article about recent AI advancements. Real data could not be fetched due to API limitations.",
+            "url": "https://example.com/ai-news",
+            "urlToImage": "https://example.com/images/ai.jpg",
+            "publishedAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "score": 100
+        },
+        {
+            "source": {"name": "Tech News Sample"},
+            "title": "GPT-5 Rumors and Speculation",
+            "description": "Sample article discussing potential features of upcoming large language models.",
+            "url": "https://example.com/gpt5-news",
+            "urlToImage": "https://example.com/images/gpt.jpg",
+            "publishedAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "score": 95
+        },
+        {
+            "source": {"name": "AI Research Digest"},
+            "title": "Breakthroughs in Computer Vision",
+            "description": "Example of recent advancements in image recognition and processing technologies.",
+            "url": "https://example.com/vision-ai",
+            "urlToImage": "https://example.com/images/vision.jpg",
+            "publishedAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "score": 90
+        }
+    ]
+    
+    output_data = {
+        "articles": sample_articles,
+        "hot_keywords": {
+            "timestamp": datetime.now().isoformat(),
+            "keywords": keywords_manager.get_current_hot_keywords(),
+            "dynamic_weights": keywords_manager.dynamic_keywords,
+            "note": "This is sample data generated due to API fetch failure."
+        }
+    }
+    
+    with open(filename, "w", encoding="utf-8") as file:
+        json.dump(output_data, file, indent=4, ensure_ascii=False)
+    
+    print(f"已创建示例数据并保存到 {filename}")
 
 def calculate_article_score_with_dynamic_keywords(article, keywords_manager):
     """使用动态关键词计算文章评分"""
