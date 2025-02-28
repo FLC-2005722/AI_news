@@ -12,8 +12,9 @@ NEWS_API_URL = "https://newsapi.org/v2/everything"
 API_KEY = os.environ.get("NEWS_API_KEY", "YOUR_NEWSAPI_KEY")  # 从环境变量获取API密钥
 QUERY = "(artificial intelligence OR machine learning OR deep learning OR AI OR LLM OR GPT)"  # 搜索关键词范围
 LANGUAGE = "en"  # 新闻语言
-SORT_BY = "publishedAt"  # 按发布时间排序
-PAGE_SIZE = 100  # 减少到默认300篇文章，以避免超出免费计划限制
+SORT_BY = "popularity"  # 按欢迎程度排序
+PAGE_SIZE = 100  # 减少到默认100篇文章，以避免超出免费计划限制
+sources = "bbc,techcrunch,arstechnica,engadget,techradar,thenextweb,wired,vice-news,google-news,news24,newsweek,abc-news,al-jazeera-english,associated-press,bloomberg,business-insider,cnn,fortune,fox-news,google-news-ca,google-news-uk,msnbc,nbc-news,new-scientist,reuters,the-verge,the-wall-street-journal,the-washington-post,time"  # 可靠新闻源
 
 # 备用新闻源API
 GNEWS_API_URL = "https://gnews.io/api/v4/search"
@@ -366,7 +367,8 @@ def fetch_from_newsapi(from_date, to_date, keywords_manager):
         "apiKey": API_KEY,
         "pageSize": PAGE_SIZE,
         "from": from_date,
-        "to": to_date
+        "to": to_date,
+        "sources": sources
     }
     
     try:
