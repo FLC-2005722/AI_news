@@ -13,7 +13,7 @@ API_KEY = os.environ.get("NEWS_API_KEY", "YOUR_NEWSAPI_KEY")  # 从环境变量�
 QUERY = "(artificial intelligence OR machine learning OR deep learning OR AI OR LLM OR GPT)"  # 搜索关键词范围
 LANGUAGE = "en"  # 新闻语言
 SORT_BY = "publishedAt"  # 按发布时间排序
-PAGE_SIZE = 300  # 减少到默认300篇文章，以避免超出免费计划限制
+PAGE_SIZE = 150  # 减少到默认300篇文章，以避免超出免费计划限制
 
 # 备用新闻源API
 GNEWS_API_URL = "https://gnews.io/api/v4/search"
