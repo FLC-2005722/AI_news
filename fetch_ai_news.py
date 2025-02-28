@@ -14,7 +14,7 @@ QUERY = "(artificial intelligence OR machine learning OR deep learning OR AI OR 
 LANGUAGE = "en"  # 新闻语言
 SORT_BY = "popularity"  # 按欢迎程度排序
 PAGE_SIZE = 100  # 减少到默认100篇文章，以避免超出免费计划限制
-sources = "bbc,techcrunch,arstechnica,engadget,techradar,thenextweb,wired,vice-news,google-news,news24,newsweek,abc-news,al-jazeera-english,associated-press,bloomberg,business-insider,cnn,fortune,fox-news,google-news-ca,google-news-uk,msnbc,nbc-news,new-scientist,reuters,the-verge,the-wall-street-journal,the-washington-post,time"  # 可靠新闻源
+sources = "bbc,techcrunch,arstechnica,engadget,techradar,thenextweb,wired,vice-news,google-news,news24,newsweek,abc-news,al-jazeera-english,associated-press,bloomberg,business-insider,cnn,fortune,fox-news,google-news-ca,google-news-uk,msnbc,nbc-news,new-scientist,reuters,the-verge,the-wall-street-journal,the-washington-post,time,the-new-york-times,the-wall-street-journal,usa-today,the-guardian-uk,the-times-of-india,the-washington-post,financial-times"  # 可靠新闻源
 
 # 备用新闻源API
 GNEWS_API_URL = "https://gnews.io/api/v4/search"
