@@ -38,9 +38,19 @@ jobs:
           python -c "import os; f=open('fetch_ai_news.py','r'); content=f.read(); f.close(); f=open('fetch_ai_news.py','w'); f.write(content.replace('YOUR_NEWSAPI_KEY', os.environ['NEWS_API_KEY'])); f.close()"
           python fetch_ai_news.py
 
-      - name: Generate PDF
+      - name: Translate News to Chinese
+        env:
+          TRANSLATE_API_KEY: ${{ secrets.TRANSLATE_API_KEY }}
         run: |
-          python generate_pdf.py ai_news_${{ env.TODAY }}.json
+          python translate.py ai_news_${{ env.TODAY }}.json
+
+      - name: Generate English PDF
+        run: |
+          python generate_pdf.py ai_news_${{ env.TODAY }}.json en
+
+      - name: Generate Chinese PDF
+        run: |
+          python generate_pdf.py ai_news_cn_${{ env.TODAY }}.json zh
 
       - name: Create GitHub Release
         id: create_release
@@ -52,5 +62,14 @@ jobs:
           name: "AI News ${{ env.TODAY }}"
           draft: false
           prerelease: false
-          files: ai_news_${{ env.TODAY }}.pdf
-          body: "Automated AI news digest for ${{ env.TODAY }}"
+          files: |
+            ai_news_${{ env.TODAY }}.pdf
+            ai_news_cn_${{ env.TODAY }}.pdf
+          body: |
+            # AI News Daily Digest ${{ env.TODAY }}
+            
+            ## 📄 Available Reports
+            - [English Version](ai_news_${{ env.TODAY }}.pdf) - AI News Daily Digest
+            - [中文版本](ai_news_cn_${{ env.TODAY }}.pdf) - AI新闻每日简报
+            
+            *These reports are automatically generated using NewsAPI and machine translation.*

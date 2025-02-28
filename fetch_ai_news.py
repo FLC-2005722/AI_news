@@ -15,9 +15,10 @@ def fetch_ai_news():
     """
     从NewsAPI获取人工智能相关新闻，并保存为JSON文件
     """
-    # 计算时间范围 - 过去7天的新闻
+    # 计算时间范围 - 过去1天的新闻
     today = datetime.now()
-    from_date = (today - timedelta(days=7)).strftime("%Y-%m-%d")
+    yesterday = today - timedelta(days=1)
+    from_date = yesterday.strftime("%Y-%m-%d")
     to_date = today.strftime("%Y-%m-%d")
     
     params = {
