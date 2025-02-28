@@ -300,8 +300,22 @@ def fetch_ai_news():
     # 初始化热门关键词管理器
     keywords_manager = HotKeywordsManager()
     
-    # 计算时间范围 - 过去1天的新闻
-    today = datetime.now()
+    # 计算时间范围
+    try:
+        # 如果设置了 TODAY 环境变量，使用它作为当前日期
+        if 'TODAY' in os.environ:
+            today_str = os.environ['TODAY']
+            today = datetime.strptime(today_str, '%Y-%m-%d')
+            # 检查是否是未来日期
+            actual_today = datetime.now()
+            if today > actual_today:
+                today = actual_today
+        else:
+            today = datetime.now()
+    except ValueError:
+        today = datetime.now()
+    
+    # 计算昨天的日期
     yesterday = today - timedelta(days=1)
     from_date = yesterday.strftime("%Y-%m-%d")
     to_date = today.strftime("%Y-%m-%d")
@@ -404,8 +418,7 @@ def fetch_ai_news():
     except requests.exceptions.RequestException as e:
         print(f"获取新闻时发生错误: {e}")
         # 如果API请求失败，创建一个空的JSON文件以避免后续处理失败
-        today_str = datetime.now().strftime("%Y-%m-%d")
-        filename = f"ai_news_{today_str}.json"
+        filename = f"ai_news_{to_date}.json"
         with open(filename, "w", encoding="utf-8") as file:
             json.dump({"articles": [], "hot_keywords": {"keywords": []}}, file)
         print(f"创建了空的新闻文件: {filename}")
