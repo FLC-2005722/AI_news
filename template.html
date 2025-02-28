@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>AI News</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        .article {
+            border-bottom: 1px solid #ddd;
+            padding: 20px;
+        }
+
+        .title {
+            color: #1a0dab;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    {% for article in articles %}
+    <div class="article">
+        <div class="title">{{ article.title }}</div>
+        <div><small>{{ article.publishedAt }}</small></div>
+        <div>{{ article.description }}</div>
+        <div><a href="{{ article.url }}">Read more</a></div>
+    </div>
+    {% endfor %}
+</body>
+
+</html>
