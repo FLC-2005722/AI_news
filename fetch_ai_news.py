@@ -13,7 +13,7 @@ API_KEY = os.environ.get("NEWS_API_KEY", "YOUR_NEWSAPI_KEY")  # 从环境变量�
 QUERY = "(artificial intelligence OR machine learning OR deep learning OR AI OR LLM OR GPT)"  # 搜索关键词范围
 LANGUAGE = "en"  # 新闻语言
 SORT_BY = "publishedAt"  # 按发布时间排序
-PAGE_SIZE = 100  # 减少到默认100篇文章，以避免超出免费计划限制
+PAGE_SIZE = 300  # 减少到默认300篇文章，以避免超出免费计划限制
 
 # 备用新闻源API
 GNEWS_API_URL = "https://gnews.io/api/v4/search"
@@ -251,7 +251,8 @@ def calculate_article_score(article):
         "techcrunch", "wired", "bbc", "nytimes", "guardian", "reuters", 
         "bloomberg", "cnbc", "forbes", "venturebeat", "verge", "zdnet", 
         "huggingface", "deepmind", "openai", "google ai", "microsoft",
-        "artificial intelligence news", "mit technology review", "ai news"
+        "artificial intelligence news", "mit technology review", "ai news",
+        "xinhuanet", "chinadaily", "globaltimes", "people's daily", "cctv", "cgtn"
     ]
     
     source = article.get("source") or {}
@@ -259,11 +260,11 @@ def calculate_article_score(article):
     
     for source in highly_trusted_sources:
         if source in source_name:
-            score += 15
+            score += 30
             break
     for source in trusted_sources:
         if source in source_name:
-            score += 10
+            score += 20
             break
     
     # 文章URL评分
@@ -603,12 +604,36 @@ def calculate_article_score_with_dynamic_keywords(article, keywords_manager):
             score += 3 * weight
     
     # 来源可靠度评分
-    highly_trusted_sources = ["nature", "science", "mit", "ieee", "arxiv"]
+    highly_trusted_sources = [
+        "nature", "science", "mit", "ieee", "arxiv",
+        "new york times", "nytimes", "wall street journal", "wsj",
+        "washington post", "financial times", "the economist",
+        "xinhua", "people's daily", "china daily"
+    ]
+    
     trusted_sources = [
-        "techcrunch", "wired", "bbc", "nytimes", "guardian", "reuters", 
-        "bloomberg", "cnbc", "forbes", "venturebeat", "verge", "zdnet", 
-        "huggingface", "deepmind", "openai", "google ai", "microsoft",
-        "artificial intelligence news", "mit technology review", "ai news"
+        # 技术媒体
+        "techcrunch", "wired", "zdnet", "venturebeat", "verge", 
+        "artificial intelligence news", "mit technology review", "ai news",
+        
+        # 主要国际媒体
+        "bbc", "guardian", "reuters", "associated press", "ap news", 
+        "bloomberg", "cnbc", "forbes", "usa today", "time magazine",
+        "the times", "telegraph", "economist", "cnn", "msnbc", "abc news",
+        
+        # AI公司/研究机构
+        "huggingface", "deepmind", "openai", "google ai", "microsoft ai",
+        
+        # 中国媒体
+        "xinhuanet", "chinadaily", "globaltimes", "cctv", "cgtn", 
+        "people's daily", "china news", "guangming daily", "economic daily",
+        
+        # 日本媒体
+        "yomiuri shimbun", "asahi shimbun", "nihon keizai", "nikkei",
+        
+        # 其他国际媒体
+        "lianhe zaobao", "chosun ilbo", "times of india", "jakarta post",
+        "der spiegel", "le monde", "el pais", "the sun", "south china morning post"
     ]
     
     source = article.get("source") or {}
@@ -616,11 +641,11 @@ def calculate_article_score_with_dynamic_keywords(article, keywords_manager):
     
     for source in highly_trusted_sources:
         if source in source_name:
-            score += 15
+            score += 30
             break
     for source in trusted_sources:
         if source in source_name:
-            score += 10
+            score += 20
             break
     
     # URL评分
