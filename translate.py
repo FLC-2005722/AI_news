@@ -175,14 +175,21 @@ def translate_news_file(news_file):
             
         # 读取英文新闻
         with open(news_file, 'r', encoding='utf-8') as f:
-            articles = json.load(f)
+            data = json.load(f)
             
+        # 确保数据结构正确
+        if not isinstance(data, dict) or "articles" not in data:
+            print(f"错误: 新闻文件格式不正确，需要包含 'articles' 数组")
+            return None
+            
+        articles = data["articles"]
+        
         if not articles:
             print("警告: 没有找到文章，将创建空的中文文件")
             today_str = datetime.now().strftime("%Y-%m-%d")
             cn_filename = f"ai_news_cn_{today_str}.json"
             with open(cn_filename, 'w', encoding='utf-8') as f:
-                json.dump([], f, ensure_ascii=False, indent=4)
+                json.dump({"articles": [], "hot_keywords": data.get("hot_keywords", {})}, f, ensure_ascii=False, indent=4)
             return cn_filename
             
         # 翻译文章，每篇输出进度
@@ -210,11 +217,17 @@ def translate_news_file(news_file):
             # 源网站名称不翻译
             translated_articles.append(translated_article)
             
-        # 保存翻译后的文章
+        # 保存翻译后的文章，保持原有的数据结构
         today_str = datetime.now().strftime("%Y-%m-%d")
         cn_filename = f"ai_news_cn_{today_str}.json"
+        
+        output_data = {
+            "articles": translated_articles,
+            "hot_keywords": data.get("hot_keywords", {})  # 保留热门关键词数据
+        }
+        
         with open(cn_filename, 'w', encoding='utf-8') as f:
-            json.dump(translated_articles, f, ensure_ascii=False, indent=4)
+            json.dump(output_data, f, ensure_ascii=False, indent=4)
             
         print(f"翻译完成! 已保存到 {cn_filename}")
         return cn_filename
