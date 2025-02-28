@@ -118,7 +118,7 @@ jobs:
           cp ai_news_cn_${{ env.TODAY }}.json data/latest_cn.json
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v2
+        uses: actions/upload-pages-artifact@v4  # 更新到v4版本
         with:
           path: '.'  # 上传整个仓库目录作为网站内容
 
