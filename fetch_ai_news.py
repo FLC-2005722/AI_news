@@ -12,7 +12,7 @@ NEWS_API_URL = "https://newsapi.org/v2/everything"
 API_KEY = os.environ.get("NEWS_API_KEY", "YOUR_NEWSAPI_KEY")  # 从环境变量获取API密钥
 QUERY = "(artificial intelligence OR machine learning OR deep learning OR AI OR LLM OR GPT)"  # 搜索关键词范围
 LANGUAGE = "en"  # 新闻语言
-SORT_BY = "popularity"  # 按欢迎程度排序
+SORT_BY = "relevancy"
 PAGE_SIZE = 100  # 减少到默认100篇文章，以避免超出免费计划限制
 sources = "bbc,techcrunch,arstechnica,engadget,techradar,thenextweb,wired,vice-news,google-news,news24,newsweek,abc-news,al-jazeera-english,associated-press,bloomberg,business-insider,cnn,fortune,fox-news,google-news-ca,google-news-uk,msnbc,nbc-news,new-scientist,reuters,the-verge,the-wall-street-journal,the-washington-post,time,the-new-york-times,the-wall-street-journal,usa-today,the-guardian-uk,the-times-of-india,the-washington-post,financial-times"  # 可靠新闻源
 
