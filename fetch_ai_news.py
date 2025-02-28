@@ -15,40 +15,50 @@ LANGUAGE = "en"  # 新闻语言
 SORT_BY = "publishedAt"  # 按发布时间排序
 PAGE_SIZE = 200  # 增加到200篇文章以获取更多候选
 
+
 # 热门AI关键词，用于评分和排序
 HOT_KEYWORDS = [
     # 大语言模型和聊天机器人
     "chatgpt", "gpt-4", "gpt4", "llama", "claude", "gemini", "bard", "mistral", "palm",
     "mixtral", "phi-2", "vicuna", "yi", "qwen", "falcon", "grok", "anthropic claude",
-    
+    "copilot", "perplexity", "ernie bot", "tongyi qianwen", "hunyuan", "baichuan",
+    "Deepseek Coder", "Deepseek-V2", "Deepseek-R1",
+
     # 主要AI公司和研究机构
-    "openai", "anthropic", "meta ai", "google ai", "deepmind", "microsoft ai", 
+    "openai", "anthropic", "meta ai", "google ai", "deepmind", "microsoft ai",
     "tesla ai", "nvidia", "hugging face", "stability ai", "cohere", "inflection ai",
-    "character ai", "allen ai", "baidu ai", "tencent ai", "xai",
-    
+    "character ai", "allen ai", "baidu ai", "tencent ai", "xai","01.AI", "moonshot AI", "DeepSeek",
+
     # 图像和多模态AI
     "midjourney", "dall-e", "dall-e 3", "stable diffusion", "sd xl", "imagen",
     "parti", "muse", "playground ai", "runway", "adobe firefly", "qwen-vl",
-    
+    "kling", "sora", "pika", "leonardo ai", "getimg ai", "stability ai",
+
     # AI技术概念
     "transformer", "diffusion model", "neural network", "foundation model",
     "multimodal", "fine-tuning", "prompt engineering", "rag", "ai agent",
     "autonomous", "self-driving", "robotics", "computer vision",
-    
+    "reinforcement learning", "transfer learning", "federated learning","generative adversarial network (GAN)",
+
     # AI应用领域
     "generative ai", "ai assistant", "coding ai", "ai image", "ai video",
     "ai music", "ai voice", "ai writing", "ai coding", "ai research",
     "ai ethics", "ai regulation", "ai safety", "ai alignment",
-    
+    "ai healthcare", "ai finance", "ai education", "ai for social good",
+
     # 技术术语
     "large language model", "llm", "reinforcement learning", "neural network",
     "machine learning", "deep learning", "artificial intelligence",
     "vector database", "embedding", "reasoning", "knowledge graph",
-    
+    "nlp", "cv", "agi", "synthetic data","hallucination", "prompt", "token",
+
     # 热门话题
     "agi", "superintelligence", "ai governance", "ai policy", "responsible ai",
-    "ai bias", "ai transparency", "ai accountability", "ai security"
+    "ai bias", "ai transparency", "ai accountability", "ai security",
+    "ai doomer", "ai alignment", "existential risk", "future of ai",
+    "ai and society", "ai and jobs","open source ai","ai regulation"
 ]
+
 
 class HotKeywordsManager:
     def __init__(self):
