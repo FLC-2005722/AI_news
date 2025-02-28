@@ -26,7 +26,7 @@
 
 - GitHub账号
 - [NewsAPI](https://newsapi.org/) API密钥
-- [智谱AI](https://open.bigmodel.cn/) API密钥（用于翻译）
+- [智谱AI](https://open.bigmodel.cn/) 申请免费API密钥用于翻译
 
 ### 配置步骤
 
@@ -54,7 +54,6 @@
   - PDF报告 (`ai_news_cn_YYYY-MM-DD.pdf`)
   - Markdown文档 (`ai_news_cn_YYYY-MM-DD.md`) 
   - 原始JSON数据 (`ai_news_cn_YYYY-MM-DD.json`)
-
 
 
 ## 许可证

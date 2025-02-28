@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write    # 添加写入仓库内容的权限
+      pages: write       # 添加写入GitHub Pages的权限
+      id-token: write    # 添加写入token的权限
 
     steps:
       - name: Checkout repository
@@ -97,3 +99,29 @@ jobs:
             - [JSON](ai_news_cn_${{ env.TODAY }}.json) - 原始JSON数据
             
             *These reports are automatically generated using NewsAPI and machine translation.*
+
+      # GitHub Pages 部署准备
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Update GitHub username in web files
+        run: |
+          # 替换网站文件中的占位符为实际的GitHub用户名
+          GITHUB_USERNAME="${GITHUB_REPOSITORY%/*}"
+          find . -name "*.html" -o -name "*.js" | xargs sed -i "s/your-username/$GITHUB_USERNAME/g"
+
+      - name: Copy latest news JSON for website
+        run: |
+          # 创建data目录存放最新的新闻数据供网页使用
+          mkdir -p data
+          cp ai_news_${{ env.TODAY }}.json data/latest.json
+          cp ai_news_cn_${{ env.TODAY }}.json data/latest_cn.json
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: '.'  # 上传整个仓库目录作为网站内容
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
