@@ -117,8 +117,11 @@ class HotKeywordsManager:
                 keywords = []
                 for repo in repos:
                     # 提取仓库名称中的关键词
-                    keywords.extend(repo['name'].lower().split('-'))
-                    keywords.extend(repo['description'].lower().split() if repo['description'] else [])
+                    if repo.get('name'):
+                        keywords.extend(repo['name'].lower().split('-'))
+                    # 提取描述中的关键词，确保描述存在
+                    if repo.get('description'):
+                        keywords.extend(repo['description'].lower().split())
                     # 提取主题标签
                     keywords.extend(repo.get('topics', []))
                 
@@ -131,12 +134,12 @@ class HotKeywordsManager:
         """从新闻标题中提取并更新热门词汇"""
         keywords = []
         for article in articles:
-            title = article.get('title', '').lower()
-            description = article.get('description', '').lower()
+            title = article.get('title', '') or ''
+            description = article.get('description', '') or ''
             
             # 提取词组和单词
-            title_words = self._extract_keywords(title)
-            desc_words = self._extract_keywords(description)
+            title_words = self._extract_keywords(title.lower())
+            desc_words = self._extract_keywords(description.lower())
             
             keywords.extend(title_words)
             keywords.extend(desc_words)
@@ -145,6 +148,10 @@ class HotKeywordsManager:
 
     def _extract_keywords(self, text: str) -> List[str]:
         """从文本中提取潜在的关键词"""
+        # 确保text是字符串
+        if not isinstance(text, str):
+            return []
+            
         # 移除特殊字符
         text = re.sub(r'[^\w\s-]', ' ', text)
         words = text.split()
@@ -221,8 +228,8 @@ def calculate_article_score(article):
     """
     score = 0
     
-    title = article.get("title", "").lower()
-    description = article.get("description", "").lower()
+    title = (article.get("title") or "").lower()
+    description = (article.get("description") or "").lower()
     
     # 标题中的热门关键词（优先级更高）
     for keyword in HOT_KEYWORDS:
@@ -247,7 +254,9 @@ def calculate_article_score(article):
         "artificial intelligence news", "mit technology review", "ai news"
     ]
     
-    source_name = article.get("source", {}).get("name", "").lower()
+    source = article.get("source") or {}
+    source_name = (source.get("name") or "").lower()
+    
     for source in highly_trusted_sources:
         if source in source_name:
             score += 15
@@ -258,7 +267,7 @@ def calculate_article_score(article):
             break
     
     # 文章URL评分
-    url = article.get("url", "").lower()
+    url = (article.get("url") or "").lower()
     if any(keyword in url for keyword in HOT_KEYWORDS):
         score += 2
     if "news" in url or "article" in url or "blog" in url:
@@ -467,8 +476,8 @@ def process_and_save_articles(articles, keywords_manager):
             article["source"]["name"] = "Unknown Source"
         
         # 生成文章内容的指纹
-        title = article["title"].lower().strip() if article["title"] else ""
-        desc = article["description"].lower().strip() if article["description"] else ""
+        title = (article["title"] or "").lower().strip()
+        desc = (article["description"] or "").lower().strip()
         content_hash = f"{title[:50]}_{desc[:100]}"
         
         # 检查是否有相似内容
@@ -478,7 +487,8 @@ def process_and_save_articles(articles, keywords_manager):
         # 检查标题相似度
         similar_found = False
         for processed_article in processed_articles:
-            if processed_article.get("title") and similar_title(title, processed_article["title"].lower().strip()):
+            proc_title = (processed_article.get("title") or "").lower().strip()
+            if proc_title and similar_title(title, proc_title):
                 similar_found = True
                 break
         
@@ -601,7 +611,9 @@ def calculate_article_score_with_dynamic_keywords(article, keywords_manager):
         "artificial intelligence news", "mit technology review", "ai news"
     ]
     
-    source_name = (article.get("source", {}).get("name") or "").lower()
+    source = article.get("source") or {}
+    source_name = (source.get("name") or "").lower()
+    
     for source in highly_trusted_sources:
         if source in source_name:
             score += 15
