@@ -31,15 +31,17 @@ jobs:
           pip install requests Jinja2 weasyprint
           sudo apt-get update && sudo apt-get install -y libcairo2-dev libpango1.0-dev libgdk-pixbuf2.0-dev libffi-dev shared-mime-info
 
-      - name: Set current date
+      - name: Set dates
         id: date
         run: |
+          # 设置输出文件日期（可以是任意日期）
           echo "TODAY=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
           echo "TAG_DATE=$(date +'%Y%m%d')" >> $GITHUB_ENV
 
       - name: Fetch AI News
         env:
           NEWS_API_KEY: ${{ secrets.NEWS_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python -c "import os; f=open('fetch_ai_news.py','r'); content=f.read(); f.close(); f=open('fetch_ai_news.py','w'); f.write(content.replace('YOUR_NEWSAPI_KEY', os.environ['NEWS_API_KEY'])); f.close()"
           python fetch_ai_news.py
