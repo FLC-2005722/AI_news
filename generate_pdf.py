@@ -26,7 +26,14 @@ def generate_pdf(json_file, language="en"):
         
         # 读取JSON数据
         with open(json_file, 'r', encoding='utf-8') as f:
-            articles = json.load(f)
+            data = json.load(f)
+            
+        # 确保数据结构正确
+        if not isinstance(data, dict) or "articles" not in data:
+            print(f"错误: 新闻文件格式不正确，需要包含 'articles' 数组")
+            return None
+            
+        articles = data["articles"]
         
         if not articles:
             print("警告: 没有找到文章，将生成空报告")
