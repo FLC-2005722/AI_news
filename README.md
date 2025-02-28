@@ -4,7 +4,7 @@
 
 
 
-# **网站：[News](news.ytfl.us.kg)**
+# **网站：[News](http://news.ytfl.us.kg)**
 
 
 
