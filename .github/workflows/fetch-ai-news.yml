@@ -8,6 +8,8 @@ on:
 jobs:
   fetch-and-publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write    # 添加写入仓库内容的权限
 
     steps:
       - name: Checkout repository
@@ -23,6 +25,10 @@ jobs:
           pip install requests Jinja2 weasyprint
           sudo apt-get update && sudo apt-get install -y libcairo2-dev libpango1.0-dev libgdk-pixbuf2.0-dev libffi-dev shared-mime-info
 
+      - name: Set current date
+        id: date
+        run: echo "TODAY=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+
       - name: Fetch AI News
         env:
           NEWS_API_KEY: ${{ secrets.NEWS_API_KEY }}
@@ -32,7 +38,7 @@ jobs:
 
       - name: Generate PDF
         run: |
-          python generate_pdf.py ai_news_$(date +'%Y-%m-%d').json
+          python generate_pdf.py ai_news_${{ env.TODAY }}.json
 
       - name: Create GitHub Release
         id: create_release
@@ -40,9 +46,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: "v$(date +'%Y%m%d')"
-          name: "AI News $(date +'%Y-%m-%d')"
+          tag_name: v${{ env.TODAY | replace('-', '') }}
+          name: "AI News ${{ env.TODAY }}"
           draft: false
           prerelease: false
-          files: ai_news_$(date +'%Y-%m-%d').pdf
-          body: "Automated AI news digest for $(date +'%Y-%m-%d')"
+          files: ai_news_${{ env.TODAY }}.pdf
+          body: "Automated AI news digest for ${{ env.TODAY }}"
